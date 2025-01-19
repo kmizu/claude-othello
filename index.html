@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Othello</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            text-align: center;
+            font-size: 30px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">現在の手番: 黒</div>
+    <div id="score">スコア - 黒: 2, 白: 2</div>
+    <table id="board"></table>
+    <button onclick="resetGame()">リセット</button>
+
+    <script>
+        const EMPTY = '';
+        const BLACK = '●';
+        const WHITE = '○';
+        const BOARD_SIZE = 8;
+        let currentPlayer = BLACK;
+        let board = [];
+
+        // ボードの初期化
+        function initializeBoard() {
+            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
+            const mid = BOARD_SIZE / 2;
+            board[mid-1][mid-1] = WHITE;
+            board[mid-1][mid] = BLACK;
+            board[mid][mid-1] = BLACK;
+            board[mid][mid] = WHITE;
+            updateBoard();
+            updateStatus();
+        }
+
+        // ボードの描画
+        function updateBoard() {
+            const table = document.getElementById('board');
+            table.innerHTML = '';
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const row = table.insertRow();
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    const cell = row.insertCell();
+                    cell.textContent = board[i][j];
+                    cell.onclick = () => makeMove(i, j);
+                }
+            }
+        }
+
+        // スコアの更新
+        function updateScore() {
+            let blackCount = 0;
+            let whiteCount = 0;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (board[i][j] === BLACK) blackCount++;
+                    if (board[i][j] === WHITE) whiteCount++;
+                }
+            }
+            document.getElementById('score').textContent = 
+                `スコア - 黒: ${blackCount}, 白: ${whiteCount}`;
+        }
+
+        // 状態の更新
+        function updateStatus() {
+            document.getElementById('status').textContent = 
+                `現在の手番: ${currentPlayer === BLACK ? '黒' : '白'}`;
+        }
+
+        // 有効な手かどうかの確認
+        function isValidMove(row, col) {
+            if (board[row][col] !== EMPTY) return false;
+
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],          [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                let r = row + dx;
+                let c = col + dy;
+                let foundOpponent = false;
+
+                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                    if (board[r][c] === EMPTY) break;
+                    if (board[r][c] === currentPlayer) {
+                        if (foundOpponent) return true;
+                        break;
+                    }
+                    foundOpponent = true;
+                    r += dx;
+                    c += dy;
+                }
+            }
+            return false;
+        }
+
+        // 石を置く
+        function makeMove(row, col) {
+            if (!isValidMove(row, col)) return;
+
+            board[row][col] = currentPlayer;
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],          [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                let r = row + dx;
+                let c = col + dy;
+                const toFlip = [];
+
+                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                    if (board[r][c] === EMPTY) break;
+                    if (board[r][c] === currentPlayer) {
+                        toFlip.forEach(([fr, fc]) => {
+                            board[fr][fc] = currentPlayer;
+                        });
+                        break;
+                    }
+                    toFlip.push([r, c]);
+                    r += dx;
+                    c += dy;
+                }
+            }
+
+            currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+            updateBoard();
+            updateScore();
+            updateStatus();
+            checkGameOver();
+        }
+
+        // ゲーム終了の確認
+        function checkGameOver() {
+            let hasValidMove = false;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (board[i][j] === EMPTY && isValidMove(i, j)) {
+                        hasValidMove = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasValidMove) {
+                currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+                let hasValidMoveAfterPass = false;
+                for (let i = 0; i < BOARD_SIZE; i++) {
+                    for (let j = 0; j < BOARD_SIZE; j++) {
+                        if (board[i][j] === EMPTY && isValidMove(i, j)) {
+                            hasValidMoveAfterPass = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasValidMoveAfterPass) {
+                    const blackCount = board.flat().filter(cell => cell === BLACK).length;
+                    const whiteCount = board.flat().filter(cell => cell === WHITE).length;
+                    let winner;
+                    if (blackCount > whiteCount) winner = '黒の勝ち';
+                    else if (whiteCount > blackCount) winner = '白の勝ち';
+                    else winner = '引き分け';
+                    alert(`ゲーム終了！\n${winner}\n黒: ${blackCount}, 白: ${whiteCount}`);
+                } else {
+                    alert('パス');
+                    updateStatus();
+                }
+            }
+        }
+
+        // ゲームのリセット
+        function resetGame() {
+            initializeBoard();
+            currentPlayer = BLACK;
+            updateStatus();
+            updateScore();
+        }
+
+        // 初期化
+        initializeBoard();
+    </script>
+</body>
+</html>
