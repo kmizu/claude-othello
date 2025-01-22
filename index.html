@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Othello</title>
+    <title>シンプルオセロ</title>
     <style>
         table {
             border-collapse: collapse;
@@ -17,87 +17,112 @@
     </style>
 </head>
 <body>
-    <div id="status">現在の手番: 黒</div>
-    <div id="score">スコア - 黒: 2, 白: 2</div>
-    <table id="board"></table>
-    <button onclick="resetGame()">リセット</button>
+    <div id="状態">現在の手番: 黒</div>
+    <div id="スコア">スコア - 黒: 2, 白: 2</div>
+    <table id="盤"></table>
+    <button onclick="ゲームをリセット()">リセット</button>
 
     <script>
-        const EMPTY = '';
-        const BLACK = '●';
-        const WHITE = '○';
-        const BOARD_SIZE = 8;
-        let currentPlayer = BLACK;
-        let board = [];
+        /** 空マスを示す定数 */
+        const 空マス = '';
 
-        // ボードの初期化
-        function initializeBoard() {
-            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
-            const mid = BOARD_SIZE / 2;
-            board[mid-1][mid-1] = WHITE;
-            board[mid-1][mid] = BLACK;
-            board[mid][mid-1] = BLACK;
-            board[mid][mid] = WHITE;
-            updateBoard();
-            updateStatus();
+        /** 黒石を示す定数 */
+        const 黒石 = '●';
+
+        /** 白石を示す定数 */
+        const 白石 = '○';
+
+        /** オセロ盤のサイズ（8×8） */
+        const 盤サイズ = 8;
+
+        /** 現在のプレイヤーの石（黒 or 白） */
+        let 現在のプレイヤー = 黒石;
+
+        /** ボードの状態を保持する配列 */
+        let ボード = [];
+
+        /**
+         * ボードの要素を初期化し、ゲームの最初の石配置を行う。
+         * また、初期の状態表示やスコア表示を行う。
+         */
+        function ボードを初期化() {
+            ボード = Array(盤サイズ).fill().map(() => Array(盤サイズ).fill(空マス));
+            const 中心 = 盤サイズ / 2;
+            ボード[中心 - 1][中心 - 1] = 白石;
+            ボード[中心 - 1][中心]     = 黒石;
+            ボード[中心][中心 - 1]     = 黒石;
+            ボード[中心][中心]         = 白石;
+            ボードを更新();
+            状態を更新();
         }
 
-        // ボードの描画
-        function updateBoard() {
-            const table = document.getElementById('board');
-            table.innerHTML = '';
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const row = table.insertRow();
-                for (let j = 0; j < BOARD_SIZE; j++) {
-                    const cell = row.insertCell();
-                    cell.textContent = board[i][j];
-                    cell.onclick = () => makeMove(i, j);
+        /**
+         * HTMLの<table>を更新して、ボードの状態を画面に反映する。
+         */
+        function ボードを更新() {
+            const テーブル = document.getElementById('盤');
+            テーブル.innerHTML = '';
+            for (let 行 = 0; 行 < 盤サイズ; 行++) {
+                const 行要素 = テーブル.insertRow();
+                for (let 列 = 0; 列 < 盤サイズ; 列++) {
+                    const セル = 行要素.insertCell();
+                    セル.textContent = ボード[行][列];
+                    セル.onclick = () => 石を置く(行, 列);
                 }
             }
         }
 
-        // スコアの更新
-        function updateScore() {
-            let blackCount = 0;
-            let whiteCount = 0;
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                for (let j = 0; j < BOARD_SIZE; j++) {
-                    if (board[i][j] === BLACK) blackCount++;
-                    if (board[i][j] === WHITE) whiteCount++;
+        /**
+         * ボード上の黒石と白石の数をカウントし、スコア表示を更新する。
+         */
+        function スコアを更新() {
+            let 黒数 = 0;
+            let 白数 = 0;
+            for (let 行 = 0; 行 < 盤サイズ; 行++) {
+                for (let 列 = 0; 列 < 盤サイズ; 列++) {
+                    if (ボード[行][列] === 黒石) 黒数++;
+                    if (ボード[行][列] === 白石) 白数++;
                 }
             }
-            document.getElementById('score').textContent = 
-                `スコア - 黒: ${blackCount}, 白: ${whiteCount}`;
+            document.getElementById('スコア').textContent = 
+                `スコア - 黒: ${黒数}, 白: ${白数}`;
         }
 
-        // 状態の更新
-        function updateStatus() {
-            document.getElementById('status').textContent = 
-                `現在の手番: ${currentPlayer === BLACK ? '黒' : '白'}`;
+        /**
+         * 現在のプレイヤー（黒 or 白）を画面上に表示する。
+         */
+        function 状態を更新() {
+            document.getElementById('状態').textContent = 
+                `現在の手番: ${現在のプレイヤー === 黒石 ? '黒' : '白'}`;
         }
 
-        // 有効な手かどうかの確認
-        function isValidMove(row, col) {
-            if (board[row][col] !== EMPTY) return false;
+        /**
+         * 指定されたマス（行, 列）が有効な手かどうかを判定する。
+         * @param {number} 行 - 石を置きたい行のインデックス
+         * @param {number} 列 - 石を置きたい列のインデックス
+         * @returns {boolean} 有効な手かどうか
+         */
+        function 有効手かどうか(行, 列) {
+            if (ボード[行][列] !== 空マス) return false;
 
-            const directions = [
-                [-1, -1], [-1, 0], [-1, 1],
-                [0, -1],          [0, 1],
-                [1, -1],  [1, 0],  [1, 1]
+            const 方向一覧 = [
+                [-1, -1], [-1,  0], [-1,  1],
+                [ 0, -1],           [ 0,  1],
+                [ 1, -1], [ 1,  0], [ 1,  1]
             ];
 
-            for (const [dx, dy] of directions) {
-                let r = row + dx;
-                let c = col + dy;
-                let foundOpponent = false;
+            for (const [dx, dy] of 方向一覧) {
+                let r = 行 + dx;
+                let c = 列 + dy;
+                let 相手石があった = false;
 
-                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
-                    if (board[r][c] === EMPTY) break;
-                    if (board[r][c] === currentPlayer) {
-                        if (foundOpponent) return true;
+                while (r >= 0 && r < 盤サイズ && c >= 0 && c < 盤サイズ) {
+                    if (ボード[r][c] === 空マス) break;
+                    if (ボード[r][c] === 現在のプレイヤー) {
+                        if (相手石があった) return true;
                         break;
                     }
-                    foundOpponent = true;
+                    相手石があった = true;
                     r += dx;
                     c += dy;
                 }
@@ -105,92 +130,104 @@
             return false;
         }
 
-        // 石を置く
-        function makeMove(row, col) {
-            if (!isValidMove(row, col)) return;
+        /**
+         * 指定のマスに石を置き、裏返せる石を裏返す処理を行う。
+         * その後、ボードやスコア、状態表示などを更新し、
+         * ゲームが終了していないかを確認する。
+         * @param {number} 行 - 石を置く行のインデックス
+         * @param {number} 列 - 石を置く列のインデックス
+         */
+        function 石を置く(行, 列) {
+            if (!有効手かどうか(行, 列)) return;
 
-            board[row][col] = currentPlayer;
-            const directions = [
-                [-1, -1], [-1, 0], [-1, 1],
-                [0, -1],          [0, 1],
-                [1, -1],  [1, 0],  [1, 1]
+            ボード[行][列] = 現在のプレイヤー;
+            const 方向一覧 = [
+                [-1, -1], [-1,  0], [-1,  1],
+                [ 0, -1],           [ 0,  1],
+                [ 1, -1], [ 1,  0], [ 1,  1]
             ];
 
-            for (const [dx, dy] of directions) {
-                let r = row + dx;
-                let c = col + dy;
-                const toFlip = [];
+            for (const [dx, dy] of 方向一覧) {
+                let r = 行 + dx;
+                let c = 列 + dy;
+                const 裏返し対象 = [];
 
-                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
-                    if (board[r][c] === EMPTY) break;
-                    if (board[r][c] === currentPlayer) {
-                        toFlip.forEach(([fr, fc]) => {
-                            board[fr][fc] = currentPlayer;
+                while (r >= 0 && r < 盤サイズ && c >= 0 && c < 盤サイズ) {
+                    if (ボード[r][c] === 空マス) break;
+                    if (ボード[r][c] === 現在のプレイヤー) {
+                        裏返し対象.forEach(([fr, fc]) => {
+                            ボード[fr][fc] = 現在のプレイヤー;
                         });
                         break;
                     }
-                    toFlip.push([r, c]);
+                    裏返し対象.push([r, c]);
                     r += dx;
                     c += dy;
                 }
             }
 
-            currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
-            updateBoard();
-            updateScore();
-            updateStatus();
-            checkGameOver();
+            現在のプレイヤー = (現在のプレイヤー === 黒石) ? 白石 : 黒石;
+            ボードを更新();
+            スコアを更新();
+            状態を更新();
+            ゲーム終了かどうか確認();
         }
 
-        // ゲーム終了の確認
-        function checkGameOver() {
-            let hasValidMove = false;
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                for (let j = 0; j < BOARD_SIZE; j++) {
-                    if (board[i][j] === EMPTY && isValidMove(i, j)) {
-                        hasValidMove = true;
+        /**
+         * ゲームが終了しているかどうかを判定し、終了時はアラートを表示する。
+         * 有効な手がない場合はパスを行い、それでも有効な手がない場合はゲーム終了。
+         */
+        function ゲーム終了かどうか確認() {
+            let 有効手あり = false;
+            for (let 行 = 0; 行 < 盤サイズ; 行++) {
+                for (let 列 = 0; 列 < 盤サイズ; 列++) {
+                    if (ボード[行][列] === 空マス && 有効手かどうか(行, 列)) {
+                        有効手あり = true;
                         break;
                     }
                 }
             }
 
-            if (!hasValidMove) {
-                currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
-                let hasValidMoveAfterPass = false;
-                for (let i = 0; i < BOARD_SIZE; i++) {
-                    for (let j = 0; j < BOARD_SIZE; j++) {
-                        if (board[i][j] === EMPTY && isValidMove(i, j)) {
-                            hasValidMoveAfterPass = true;
+            if (!有効手あり) {
+                // パス
+                現在のプレイヤー = (現在のプレイヤー === 黒石) ? 白石 : 黒石;
+                let パス後に有効手あり = false;
+                for (let 行 = 0; 行 < 盤サイズ; 行++) {
+                    for (let 列 = 0; 列 < 盤サイズ; 列++) {
+                        if (ボード[行][列] === 空マス && 有効手かどうか(行, 列)) {
+                            パス後に有効手あり = true;
                             break;
                         }
                     }
                 }
 
-                if (!hasValidMoveAfterPass) {
-                    const blackCount = board.flat().filter(cell => cell === BLACK).length;
-                    const whiteCount = board.flat().filter(cell => cell === WHITE).length;
-                    let winner;
-                    if (blackCount > whiteCount) winner = '黒の勝ち';
-                    else if (whiteCount > blackCount) winner = '白の勝ち';
-                    else winner = '引き分け';
-                    alert(`ゲーム終了！\n${winner}\n黒: ${blackCount}, 白: ${whiteCount}`);
+                if (!パス後に有効手あり) {
+                    const 黒数 = ボード.flat().filter(マス => マス === 黒石).length;
+                    const 白数 = ボード.flat().filter(マス => マス === 白石).length;
+                    let 勝敗結果 = '';
+                    if (黒数 > 白数) 勝敗結果 = '黒の勝ち';
+                    else if (白数 > 黒数) 勝敗結果 = '白の勝ち';
+                    else 勝敗結果 = '引き分け';
+                    alert(`ゲーム終了！\n${勝敗結果}\n黒: ${黒数}, 白: ${白数}`);
                 } else {
                     alert('パス');
-                    updateStatus();
+                    状態を更新();
                 }
             }
         }
 
-        // ゲームのリセット
-        function resetGame() {
-            initializeBoard();
-            currentPlayer = BLACK;
-            updateStatus();
-            updateScore();
+        /**
+         * ゲームをリセットし、ボードやプレイヤーを初期状態に戻す。
+         */
+        function ゲームをリセット() {
+            ボードを初期化();
+            現在のプレイヤー = 黒石;
+            状態を更新();
+            スコアを更新();
         }
 
-        // 初期化
-        initializeBoard();
+        // ページ読み込み時の初期化
+        ボードを初期化();
     </script>
 </body>
 </html>
